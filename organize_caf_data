@@ -1,0 +1,110 @@
+input_file = 'output.txt'
+output_file = 'art_tracks_3d.txt'
+
+# Read the lines from the input file
+with open(input_file, 'r') as file:
+    lines = file.readlines()
+
+points = []
+output_data = []
+
+def generate_point(data1, data2, idx1, idx2, idx3):
+    # Shift the values to the right
+    return [float(data1[idx3])/10, float(data1[idx1])/10, float(data2[idx2])/10]
+
+# Helper function to find the matching line for x01
+def find_next_line(start_index, lines, target_idx0, target_idx1, target_idx2):
+    for j in range(start_index, len(lines)):
+        next_line = lines[j].strip().split()
+        if int(next_line[0]) == target_idx0 and int(next_line[1]) == target_idx1 and int(next_line[2]) == target_idx2:
+            return next_line
+    return None
+
+# Process each line individually
+for i in range(len(lines)):
+    line = lines[i]
+    data = line.strip().split()
+
+    if len(data) < 6:
+        continue  # Skip lines that don't have enough data
+
+    idx0 = int(data[0])
+    idx1 = int(data[1])
+    idx2 = int(data[2])
+
+    # Check if the current line starts a new track
+    if (idx0, idx1, idx2) == (0, 0, 0) and points:
+        if len(points) > 2:
+            output_data.append(points)
+        points = []
+
+    # Process 000 and 001
+    if (idx0, idx1, idx2) == (0, 0, 0):
+        next_line = find_next_line(i + 1, lines, 0, 0, 1)
+        if next_line:
+            point = generate_point(data, next_line, 4, 3, 5)
+            points.append(point)
+
+    # Process 100 and 101
+    elif (idx0, idx1, idx2) == (1, 0, 0):
+        next_line = find_next_line(i + 1, lines, 1, 0, 1)
+        if next_line:
+            point = generate_point(data, next_line, 4, 3, 5)
+            points.append(point)
+
+    # Process 201 and 202
+    elif (idx0, idx1, idx2) == (2, 0, 1):
+        next_line = find_next_line(i + 1, lines, 2, 0, 2)
+        if next_line:
+            point = generate_point(data, next_line, 4, 3, 5)
+            points.append(point)
+
+    # Process 301 and 302
+    elif (idx0, idx1, idx2) == (3, 0, 1):
+        next_line = find_next_line(i + 1, lines, 3, 0, 2)
+        if next_line:
+            point = generate_point(data, next_line, 4, 3, 5)
+            points.append(point)
+
+    # Process 400 and 401
+    elif (idx0, idx1, idx2) == (4, 0, 0):
+        next_line = find_next_line(i + 1, lines, 4, 0, 1)
+        if next_line:
+            point = generate_point(data, next_line, 4, 3, 5)
+            points.append(point)
+
+    # Process 500 and 501 (or 511)
+    elif (idx0, idx1, idx2) == (5, 0, 0):
+        next_line = find_next_line(i + 1, lines, 5, 0, 1)
+        if not next_line:
+            next_line = find_next_line(i + 1, lines, 5, 1, 1)
+        if next_line:
+            point = generate_point(data, next_line, 3, 4, 5)
+            points.append(point)
+
+    # Process 600 and 601 (or 611)
+    elif (idx0, idx1, idx2) == (6, 0, 0):
+        next_line = find_next_line(i + 1, lines, 6, 0, 1)
+        if not next_line:
+            next_line = find_next_line(i + 1, lines, 6, 1, 1)
+        if next_line:
+            point = generate_point(data, next_line, 3, 4, 5)
+            points.append(point)
+
+    # Process 700 and 701 (or 711)
+    elif (idx0, idx1, idx2) == (7, 0, 0):
+        next_line = find_next_line(i + 1, lines, 7, 0, 1)
+        if not next_line:
+            next_line = find_next_line(i + 1, lines, 7, 1, 1)
+        if next_line:
+            point = generate_point(data, next_line, 3, 4, 5)
+            points.append(point)
+
+# After the loop, if there are any remaining points, add them to output_data
+if points:
+    output_data.append(points)
+
+# Write the output data to the file while maintaining the nested list format
+with open(output_file, 'w') as file:
+    for group in output_data:
+        file.write(str(group) + '\n')

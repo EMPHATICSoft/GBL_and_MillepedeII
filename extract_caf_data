@@ -1,0 +1,63 @@
+import ROOT
+
+# Open the caf.root file
+file = ROOT.TFile("emphmc_r2293_s1.dig.caf.root")
+
+# Access the tree named "recTree;2"
+tree = file.Get("recTree;2")
+
+# Open a text file to write the output
+output_file = open("output.txt", "w")
+
+# Loop over all entries in the tree
+for i in range(tree.GetEntries()):
+    # Get the ith entry
+    tree.GetEntry(i)
+
+    # Access the 'cluster.clust' vector
+    cluster_vector = getattr(tree, "rec.cluster.clust")
+
+    # Access the 'lineseg.lineseg' vector
+    lineseg_vector = getattr(tree, "rec.lineseg.lineseg")
+
+    # Create a dictionary to count hits per station and plane
+    hit_count = {}
+
+    # Iterate over the clusters to count hits per plane
+    for cluster_obj in cluster_vector:
+        station = cluster_obj.station
+        plane = cluster_obj.plane
+        key = (station, plane)
+
+        if key in hit_count:
+            hit_count[key] += 1
+        else:
+            hit_count[key] = 1
+
+    # Check if any plane has more than one hit
+    all_good_clusters = all(count == 1 for count in hit_count.values())
+
+    # Only proceed if all planes have exactly one hit
+    if all_good_clusters:
+        # Check if both vectors have the same length
+        if len(cluster_vector) == len(lineseg_vector):
+            # Iterate over both vectors simultaneously
+            for cluster_obj, lineseg_obj in zip(cluster_vector, lineseg_vector):
+                # Access specific attributes within each 'SRSSDClust' object
+                station = cluster_obj.station
+                sens = cluster_obj.sens
+                plane = cluster_obj.plane
+
+                # Calculate the average coordinates
+                avg_x = (lineseg_obj.x0.x + lineseg_obj.x1.x) / 2.0
+                avg_y = (lineseg_obj.x0.y + lineseg_obj.x1.y) / 2.0
+                avg_z = (lineseg_obj.x0.z + lineseg_obj.x1.z) / 2.0
+
+                # Write the average coordinates to the text file
+                output_file.write(f"{station}\t{sens}\t{plane}\t{avg_x}\t{avg_y}\t{avg_z}\n")
+        else:
+            print(f"Warning: Mismatch in vector lengths at entry {i}")
+
+# Close the output file and the ROOT file
+output_file.close()
+file.Close()
